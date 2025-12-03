@@ -1,0 +1,35 @@
+# Compiled binaries
+*.o
+*.class
+*.exe
+*.out
+
+# Executables (without extension)
+overflow_c
+overflow_rust
+page_size_detector
+pagefault_benchmark
+thread_overflow
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Rust
+target/
+Cargo.lock
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
