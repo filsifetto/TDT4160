@@ -1,4 +1,4 @@
-# TDT4160 - Practical Computer Science Learning
+# TDT4160 - Computer Organization and Design
 
 A collection of practical demonstrations and experiments for learning about computers, system programming, and how computers work at a fundamental level.
 
