@@ -3,6 +3,66 @@ package computerdesign.instruction;
 /**
  * Instruction - represents a single RISC-V instruction.
  * 
+ * ╔═══════════════════════════════════════════════════════════════════════════════╗
+ * ║     PATTERSON & HENNESSY'S THREE PRINCIPLES OF ISA DESIGN                    ║
+ * ╚═══════════════════════════════════════════════════════════════════════════════╝
+ * 
+ * ┌─────────────────────────────────────────────────────────────────────────────┐
+ * │  1. SIMPLICITY FAVOURS REGULARITY                                          │
+ * ├─────────────────────────────────────────────────────────────────────────────┤
+ * │  Regular structures are easier to implement in hardware.                   │
+ * │                                                                            │
+ * │  RISC-V examples:                                                          │
+ * │  • Fixed 32-bit instruction size (no variable-length decoding!)            │
+ * │  • rs1, rs2, rd ALWAYS in the same bit positions across ALL formats        │
+ * │  • Opcode ALWAYS in bits [6:0]                                             │
+ * │  • Three operand format: rd = rs1 op rs2 (no accumulator model)            │
+ * │                                                                            │
+ * │  Hardware benefit: Decode can start reading registers BEFORE knowing       │
+ * │  which instruction it is! This speeds up the critical path.                │
+ * └─────────────────────────────────────────────────────────────────────────────┘
+ * 
+ * ┌─────────────────────────────────────────────────────────────────────────────┐
+ * │  2. SMALLER IS FASTER                                                      │
+ * ├─────────────────────────────────────────────────────────────────────────────┤
+ * │  Smaller hardware = shorter wires = faster signals = higher clock speed.   │
+ * │                                                                            │
+ * │  RISC-V examples:                                                          │
+ * │  • Only 32 registers (5 bits to encode) - register file is small & fast    │
+ * │  • Simple instruction formats - less decode logic                          │
+ * │  • Load/store architecture - only loads and stores access memory           │
+ * │    (ALU operates only on registers, not memory)                            │
+ * │  • No complex addressing modes (just base + offset)                        │
+ * │                                                                            │
+ * │  Why not 64 registers? More registers = larger multiplexers = slower.      │
+ * │  Why not 8 registers? Too few = more spilling to memory = slower overall.  │
+ * │  32 is the sweet spot!                                                     │
+ * └─────────────────────────────────────────────────────────────────────────────┘
+ * 
+ * ┌─────────────────────────────────────────────────────────────────────────────┐
+ * │  3. GOOD DESIGN DEMANDS GOOD COMPROMISES                                   │
+ * ├─────────────────────────────────────────────────────────────────────────────┤
+ * │  Conflicting requirements require careful balancing.                       │
+ * │                                                                            │
+ * │  RISC-V compromises:                                                       │
+ * │  • Fixed-size instructions vs. code density                                │
+ * │    → 32-bit is simple, but adds optional 16-bit "C" extension              │
+ * │                                                                            │
+ * │  • Immediate size vs. instruction formats                                  │
+ * │    → I-type has 12-bit immediate (fits one instruction)                    │
+ * │    → For 32-bit constants: LUI + ADDI (two instructions)                   │
+ * │    → Trade-off: rare case (big constants) takes more instructions          │
+ * │                                                                            │
+ * │  • Branch offset encoding (B-type immediate bits are scrambled!)           │
+ * │    → Looks weird, but sign bit is at position 31 (like all formats)        │
+ * │    → This lets sign extension start immediately while decoding             │
+ * │    → Compromise: complex immediate encoding, but faster hardware           │
+ * │                                                                            │
+ * │  • No condition codes (unlike x86)                                         │
+ * │    → Simpler hardware (no flag dependencies between instructions)          │
+ * │    → But comparisons need an extra register                                │
+ * └─────────────────────────────────────────────────────────────────────────────┘
+ * 
  * ═══════════════════════════════════════════════════════════════════════════════
  * FUNDAMENTAL INSIGHT: INSTRUCTIONS ARE JUST DATA!
  * ═══════════════════════════════════════════════════════════════════════════════
@@ -16,7 +76,7 @@ package computerdesign.instruction;
  * This is the stored-program concept: code and data share the same memory!
  * 
  * ═══════════════════════════════════════════════════════════════════════════════
- * RISC-V INSTRUCTION FORMATS (all 32 bits)
+ * RISC-V INSTRUCTION FORMATS (all 32 bits) — Principle 1 in Action!
  * ═══════════════════════════════════════════════════════════════════════════════
  * 
  * R-TYPE (Register-Register): add, sub, and, or, xor, sll, srl, sra, slt
@@ -64,19 +124,32 @@ package computerdesign.instruction;
  * Note: Immediate bits are scrambled for hardware reasons (sign bit at [31]).
  * 
  * ═══════════════════════════════════════════════════════════════════════════════
- * WHY THESE FORMATS?
+ * HOW THE FORMATS EMBODY THE THREE PRINCIPLES
  * ═══════════════════════════════════════════════════════════════════════════════
  * 
- * RISC-V's format design has specific goals:
+ * PRINCIPLE 1 — SIMPLICITY FAVOURS REGULARITY:
+ *   • rs1 is ALWAYS at bits [19:15] in EVERY format that uses it
+ *   • rs2 is ALWAYS at bits [24:20] in EVERY format that uses it
+ *   • rd  is ALWAYS at bits [11:7]  in EVERY format that uses it
+ *   • Opcode ALWAYS at bits [6:0]
+ *   
+ *   This means the register file can start reading rs1 and rs2 BEFORE
+ *   the instruction is fully decoded! Parallelism = speed.
  * 
- *   1. REGULARITY: rs1, rs2, rd are always in the same bit positions
- *      → Simpler decode hardware (can start reading registers immediately)
+ * PRINCIPLE 2 — SMALLER IS FASTER:
+ *   • Only 6 instruction formats (compare to x86's dozens!)
+ *   • 7-bit opcode + 3-bit funct3 = simple decode logic
+ *   • 5-bit register fields = exactly 32 registers (sweet spot)
  * 
- *   2. SIGN BIT ALWAYS AT [31]: All immediates have sign bit at bit 31
- *      → Sign extension can start immediately
- * 
- *   3. SIMPLE OPCODE SPACE: 7-bit opcode allows efficient encoding
- *      → Fast instruction classification
+ * PRINCIPLE 3 — GOOD DESIGN DEMANDS GOOD COMPROMISES:
+ *   • Immediate bits are "scrambled" in B-type and J-type
+ *     → Looks ugly, BUT sign bit is always at [31]
+ *     → Hardware can start sign-extension immediately
+ *     → Compromise: complex encoding for faster execution
+ *   
+ *   • S-type splits the immediate across two fields
+ *     → Looks weird, BUT keeps rs1, rs2 in same position as R-type
+ *     → Compromise: harder for humans, easier for hardware
  * 
  * ═══════════════════════════════════════════════════════════════════════════════
  * 
