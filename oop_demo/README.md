@@ -2,6 +2,19 @@
 
 A Java project that models computer architecture concepts using Object-Oriented Programming. Inspired by Patterson & Hennessy's *Computer Organization and Design: RISC-V Edition*.
 
+> **Course Context**: This project supports TDT4160 at NTNU. See [LEARNING_GOALS.md](../LEARNING_GOALS.md) for the complete course objectives.
+
+## Learning Goals Coverage
+
+| Topic | Learning Goals | This Project |
+|-------|---------------|--------------|
+| **T2: Instruksjonssett** | K1, K2, K3, K5, F1 | `instruction/` - RISC-V encoding, formats, the 3 design principles |
+| **T3: Enkeltsykel** | K1, K2, K3, K5, F2, F3 | `processor/SingleCycleProcessor.java`, `control/ControlUnit.java` |
+| **T4: Flersykel** | K1, K2, K3, K5, F2, F3 | `processor/MultiCycleProcessor.java` |
+| **T5: Samlebånd** | K1, K2, K3, K5, F2, F3 | `processor/PipelineProcessor.java`, `pipeline/HazardUnit.java` |
+| **T6: Minnesystem** | K1, K2, K4, K5, F2, F3 | `memory/Cache.java`, `memory/PageTable.java`, `memory/VirtualMemory.java` |
+| **OS Concepts** | K2, K5 | `os/Process.java`, `os/Scheduler.java` |
+
 ## Philosophy
 
 Understanding computer architecture is easier when you can see the **state** and **behavior** of each component clearly. OOP provides a natural way to model this:

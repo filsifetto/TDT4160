@@ -70,11 +70,23 @@ See `oop_demo/README.md` for detailed documentation.
 
 ## Learning Goals
 
-This project is designed to help you understand:
-- How computers manage memory
-- How different programming languages handle edge cases
-- System limits and constraints
-- Performance characteristics of modern hardware
+This project supports **TDT4160 - Datamaskiner - Grunnkurs** at NTNU.
+
+See **[LEARNING_GOALS.md](LEARNING_GOALS.md)** for the complete course objectives (læringsutbyttebeskrivelser).
+
+### Topic Coverage
+
+| Course Topic | Demo/Project |
+|--------------|--------------|
+| T2: Instruksjonssett (RISC-V) | `oop_demo/` - Instruction encoding |
+| T3: Enkeltsykelprosessor | `oop_demo/` - SingleCycleProcessor |
+| T4: Flersykelprosessor | `oop_demo/` - MultiCycleProcessor |
+| T5: Samlebåndsprosessor | `oop_demo/` - PipelineProcessor, HazardUnit |
+| T6: Minnesystem | `oop_demo/` - Cache, Virtual Memory |
+| T6: Minnesystem | `memory_demo/` - Page faults, page sizes |
+| T7: Parallelle datamaskiner | `benchmark_demo/` - Parallelism |
+| Overflow & representation | `overflow_demo/` - Integer overflow |
+| Threads & processes | `thread_demo/`, `oop_demo/os/` |
 
 ## License
 
