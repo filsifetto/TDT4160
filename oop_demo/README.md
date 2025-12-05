@@ -11,44 +11,92 @@ Understanding computer architecture is easier when you can see the **state** and
 - **Methods** represent the **operations** each component can perform
 - **Interfaces** capture common behavior (e.g., all memory types can read/write)
 
+## Processor Architecture: Datapath vs Control
+
+A processor consists of two fundamental parts:
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                           DATAPATH                                  │
+│  "The roads and vehicles" - where data flows and gets transformed   │
+│                                                                     │
+│   Register File → Muxes → ALU → Memory → Pipeline Registers         │
+└─────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────┐
+│                           CONTROL                                   │
+│  "The traffic lights" - decides what happens when                   │
+│                                                                     │
+│   Control Unit (decoder) + Hazard Unit (forwarding & stalls)        │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+**Stateful components** (values persist across clock cycles):
+- Registers, RegisterFile, Memory, Pipeline Registers, PC
+
+**Combinational components** (output depends only on current inputs):
+- ALU, Control Unit, Hazard Unit, Multiplexers
+
 ## Project Structure
 
 ```
 src/computerdesign/
-├── processor/           # CPU implementations
-│   ├── Processor.java          # Interface for all processors
-│   ├── SingleCycleProcessor.java
-│   ├── MultiCycleProcessor.java
-│   └── PipelineProcessor.java
+├── alu/                 # DATAPATH: Computational unit (combinational)
+│   └── ALU.java                
 │
-├── memory/              # Memory hierarchy
-│   ├── MemoryUnit.java         # Interface for all memory
+├── memory/              # DATAPATH: Storage hierarchy (stateful)
+│   ├── MemoryUnit.java         # Common interface for all memory
 │   ├── Register.java           # Single register
 │   ├── RegisterFile.java       # All 32 RISC-V registers
-│   ├── Cache.java              # Cache with hit/miss tracking
-│   └── MainMemory.java         # RAM
+│   ├── Cache.java              # Fast memory (L1, L2)
+│   ├── MainMemory.java         # Physical RAM (HARDWARE state)
+│   ├── PageTable.java          # Virtual→physical mapping (PROCESS state)
+│   └── VirtualMemory.java      # Per-process address space
 │
-├── alu/                 # Arithmetic Logic Unit
-│   └── ALU.java                # All arithmetic/logic operations
+├── instruction/         # REPRESENTATION: How instruction bits are organized
+│   ├── Instruction.java        # 32-bit RISC-V instruction encoding
+│   └── InstructionDecoder.java # Disassembly for debugging
 │
-├── control/             # Control logic
-│   └── ControlUnit.java        # Instruction decoding
+├── control/             # CONTROL: Decision logic (combinational)
+│   └── ControlUnit.java        # Generates control signals from opcode
 │
-├── instruction/         # RISC-V instructions
-│   ├── Instruction.java        # Instruction encoding/decoding
-│   └── InstructionDecoder.java # Disassembly
+├── pipeline/            # PIPELINING: Stage separation
+│   ├── PipelineRegister.java   # DATAPATH: IF/ID, ID/EX, EX/MEM, MEM/WB
+│   └── HazardUnit.java         # CONTROL: Forwarding & stall logic
 │
-├── pipeline/            # Pipeline components
-│   ├── PipelineRegister.java   # IF/ID, ID/EX, EX/MEM, MEM/WB
-│   └── HazardUnit.java         # Data/control hazard detection
+├── processor/           # INTEGRATION: Complete CPU implementations
+│   ├── Processor.java          # Common interface
+│   ├── SingleCycleProcessor.java
+│   ├── MultiCycleProcessor.java
+│   ├── PipelineProcessor.java
+│   └── ProcessorStats.java     # Performance metrics
 │
-├── os/                  # Operating system concepts
-│   ├── Process.java            # Process abstraction
+├── os/                  # SYSTEM SOFTWARE: OS concepts
+│   ├── Process.java            # Process abstraction (owns page table!)
 │   ├── ProcessThread.java      # Thread abstraction
 │   └── Scheduler.java          # CPU scheduling
 │
 └── Main.java            # Demonstration program
 ```
+
+## Patterson & Hennessy's Three Principles
+
+The RISC-V instruction set embodies these fundamental design principles:
+
+1. **Simplicity favours regularity**
+   - Fixed 32-bit instruction size
+   - rs1, rs2, rd always in the same bit positions
+   - Three-operand format: `rd = rs1 op rs2`
+
+2. **Smaller is faster**
+   - Only 32 registers (sweet spot: not too few, not too many)
+   - Simple instruction formats = less decode logic
+   - Load/store architecture (only loads/stores access memory)
+
+3. **Good design demands good compromises**
+   - Immediate bits are "scrambled" in B-type/J-type, but sign bit always at [31]
+   - 32-bit constants need two instructions (LUI + ADDI), but simple formats
+   - No condition codes (simpler hardware, but comparisons need a register)
 
 ## Key Concepts Modeled
 
@@ -81,7 +129,27 @@ IF → ID → EX → MEM → WB
 └─────────────────────── Fetch instruction from memory
 ```
 
-### 4. Process vs Thread
+### 4. Virtual Memory: Hardware vs Process State
+
+A key insight: **Physical memory is HARDWARE state, Page tables are PROCESS state.**
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  HARDWARE STATE (shared)                                    │
+│  └── MainMemory (physical RAM, divided into frames)         │
+└─────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────┐
+│  PROCESS STATE (per-process)                                │
+│  └── PageTable (maps virtual pages → physical frames)       │
+│      Process A: virtual 0x1000 → frame 5                    │
+│      Process B: virtual 0x1000 → frame 9  (different!)      │
+└─────────────────────────────────────────────────────────────┘
+```
+
+This is how each process gets its own isolated address space!
+
+### 5. Process vs Thread
 
 | Aspect | Process | Thread |
 |--------|---------|--------|
@@ -119,9 +187,10 @@ Ideas for further exploration:
 
 - **Branch Prediction**: Reduce control hazards
 - **Out-of-Order Execution**: Execute instructions when operands are ready
-- **Virtual Memory**: Page tables, TLB
+- **TLB (Translation Lookaside Buffer)**: Cache for page table entries
 - **Superscalar**: Multiple pipelines
 - **SIMD**: Vector operations
+- **Multi-core**: Multiple processors with cache coherence
 
 ## References
 
