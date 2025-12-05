@@ -5,23 +5,96 @@ import computerdesign.pipeline.PipelineRegister.*;
 /**
  * HazardUnit - detects and handles pipeline hazards.
  * 
- * Hazards are situations where the pipeline cannot proceed normally:
+ * ═══════════════════════════════════════════════════════════════════════════════
+ * THE PRICE OF PIPELINING: HAZARDS
+ * ═══════════════════════════════════════════════════════════════════════════════
  * 
- * 1. Data Hazards: An instruction needs data that isn't ready yet
- *    - RAW (Read After Write): Most common, handled by forwarding or stalling
- *    - WAR (Write After Read): Not a problem in simple pipelines
- *    - WAW (Write After Write): Not a problem in simple pipelines
+ * Pipelining increases throughput by overlapping instruction execution.
+ * But this creates HAZARDS - situations where the next instruction can't
+ * execute because of a dependency on a previous instruction.
  * 
- * 2. Control Hazards: Branch/jump changes the PC unexpectedly
- *    - Solution: Predict, stall, or flush
+ * ═══════════════════════════════════════════════════════════════════════════════
+ * HAZARD TYPE 1: DATA HAZARDS
+ * ═══════════════════════════════════════════════════════════════════════════════
  * 
- * 3. Structural Hazards: Two instructions need the same hardware
- *    - Solution: Duplicate hardware or stall
+ * Occur when an instruction depends on the result of a previous instruction
+ * that hasn't completed yet.
  * 
- * This unit implements:
- * - Forwarding (bypass) to avoid stalls when possible
- * - Stall detection when forwarding isn't possible (e.g., load-use)
- * - Flush signals for branch mispredictions
+ * RAW (Read After Write) - Most common:
+ *   add  x1, x2, x3    # Writes x1 in WB stage (cycle 5)
+ *   sub  x4, x1, x5    # Needs x1 in ID stage (cycle 3)!
+ *   
+ *   Cycle:    1    2    3    4    5    6
+ *   add:     IF   ID   EX   MEM  WB
+ *   sub:          IF   ID   EX   MEM  WB
+ *                      ↑
+ *                  Needs x1, but x1 not written yet!
+ * 
+ * SOLUTION 1: FORWARDING (Bypassing)
+ *   Don't wait for WB - forward the result from EX/MEM or MEM/WB directly!
+ *   
+ *   Cycle:    1    2    3    4    5
+ *   add:     IF   ID   EX   MEM  WB
+ *   sub:          IF   ID   EX   MEM  WB
+ *                      │    ↑
+ *                      └────┘ Forward from EX/MEM!
+ * 
+ * SOLUTION 2: STALLING (when forwarding isn't possible)
+ *   lw   x1, 0(x2)     # Data available after MEM stage
+ *   add  x3, x1, x4    # Needs x1 in EX stage - can't forward in time!
+ *   
+ *   Must insert a "bubble" (NOP):
+ *   Cycle:    1    2    3    4    5    6    7
+ *   lw:      IF   ID   EX   MEM  WB
+ *   add:          IF   ID   ──   EX   MEM  WB
+ *                      ↑    │
+ *                      │    stall (bubble)
+ *                      │
+ *                      Can forward from MEM/WB next cycle
+ * 
+ * ═══════════════════════════════════════════════════════════════════════════════
+ * HAZARD TYPE 2: CONTROL HAZARDS
+ * ═══════════════════════════════════════════════════════════════════════════════
+ * 
+ * Occur when a branch or jump changes the PC, but we've already fetched
+ * the wrong instructions!
+ * 
+ *   beq  x1, x2, target  # Branch decision in EX stage
+ *   add  x3, x4, x5      # Fetched speculatively - wrong if branch taken!
+ *   sub  x6, x7, x8      # Also wrong if branch taken!
+ *   
+ *   Cycle:    1    2    3    4    5
+ *   beq:     IF   ID   EX   MEM  WB
+ *   add:          IF   ID   ──   ── (flushed if branch taken)
+ *   sub:               IF   ──   ── (flushed if branch taken)
+ * 
+ * SOLUTIONS:
+ *   1. STALL: Always wait until branch is resolved (slow)
+ *   2. FLUSH: Execute speculatively, flush if wrong
+ *   3. PREDICT: Guess branch outcome, flush if wrong
+ *      - Static: Always predict not-taken, or always taken
+ *      - Dynamic: Use history to predict (branch predictor)
+ * 
+ * ═══════════════════════════════════════════════════════════════════════════════
+ * HAZARD TYPE 3: STRUCTURAL HAZARDS
+ * ═══════════════════════════════════════════════════════════════════════════════
+ * 
+ * Occur when two instructions need the same hardware resource.
+ * 
+ * Example: Single memory port for both instructions and data
+ *   lw    ...         # MEM stage: reading data from memory
+ *   ???              # IF stage: fetching instruction from memory
+ *   
+ *   Can't do both at once with single-ported memory!
+ * 
+ * SOLUTION: Duplicate hardware
+ *   - Separate instruction and data caches (Harvard architecture)
+ *   - Multiple register file ports
+ * 
+ * ═══════════════════════════════════════════════════════════════════════════════
+ * 
+ * @see PipelineProcessor - Uses this unit for hazard handling
+ * @see PipelineRegister - The pipeline registers between stages
  */
 public class HazardUnit {
     

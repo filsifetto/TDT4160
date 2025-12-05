@@ -7,6 +7,8 @@ import computerdesign.os.ProcessThread;
 import computerdesign.os.Scheduler;
 import computerdesign.processor.*;
 
+// Note: computerdesign.memory.* includes PageTable, VirtualMemory, MainMemory
+
 /**
  * Main - Demonstration of the OOP Computer Design Model.
  * 
@@ -33,6 +35,7 @@ public class Main {
         demonstrateALU();
         demonstrateInstructions();
         demonstrateProcessors();
+        demonstrateVirtualMemory();
         demonstrateProcessAndThreads();
         
         System.out.println("\n✓ All demonstrations complete!");
@@ -241,6 +244,129 @@ public class Main {
         System.out.println("  Single-Cycle: CPI = 1, but long clock period");
         System.out.println("  Multi-Cycle:  CPI > 1, but shorter clock period");
         System.out.println("  Pipeline:     CPI → 1, with short clock period (BEST!)");
+        System.out.println();
+    }
+    
+    /**
+     * Demonstrate virtual memory concepts.
+     * 
+     * KEY INSIGHT: Physical memory is HARDWARE state.
+     *              Virtual memory (page table) is PROCESS state!
+     */
+    private static void demonstrateVirtualMemory() {
+        System.out.println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+        System.out.println("  VIRTUAL MEMORY DEMONSTRATION");
+        System.out.println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+        System.out.println();
+        
+        System.out.println("KEY INSIGHT:");
+        System.out.println("  • Physical Memory (RAM) = HARDWARE state (shared)");
+        System.out.println("  • Page Table = PROCESS state (per-process)");
+        System.out.println();
+        
+        // Create physical memory (the hardware - shared by all processes)
+        MainMemory physicalMemory = new MainMemory(64 * 1024);  // 64KB physical RAM
+        
+        System.out.println("Physical Memory (Hardware State):");
+        System.out.println("  Size: " + physicalMemory.getSize() + " bytes");
+        System.out.println("  Frame Size: " + physicalMemory.getFrameSize() + " bytes");
+        System.out.println("  Total Frames: " + physicalMemory.getTotalFrames());
+        System.out.println("  Free Frames: " + physicalMemory.getFreeFrames());
+        System.out.println();
+        
+        // Create two processes - each gets its own page table!
+        computerdesign.os.Process processA = new computerdesign.os.Process(100, "Process_A", physicalMemory);
+        computerdesign.os.Process processB = new computerdesign.os.Process(200, "Process_B", physicalMemory);
+        
+        System.out.println("Created Two Processes (each with its own page table):");
+        System.out.println("  " + processA);
+        System.out.println("  " + processB);
+        System.out.println();
+        
+        // Allocate frames and set up page tables
+        PageTable ptA = processA.getPageTable();
+        PageTable ptB = processB.getPageTable();
+        
+        // Process A: Map virtual page 0x00400 to physical frame 4
+        int frameForA = physicalMemory.allocateFrame();
+        ptA.mapPage(0x00400, frameForA, true, false, true);  // Code: R-X
+        
+        // Process A: Map virtual page 0x10000 to physical frame 5
+        int dataFrameA = physicalMemory.allocateFrame();
+        ptA.mapPage(0x10000, dataFrameA, true, true, false);  // Data: RW-
+        
+        // Process B: Map SAME virtual address to DIFFERENT physical frame!
+        int frameForB = physicalMemory.allocateFrame();
+        ptB.mapPage(0x00400, frameForB, true, false, true);  // Code: R-X
+        
+        int dataFrameB = physicalMemory.allocateFrame();
+        ptB.mapPage(0x10000, dataFrameB, true, true, false);  // Data: RW-
+        
+        System.out.println("Page Table Mappings (Virtual → Physical):");
+        System.out.println();
+        System.out.println("  Process A's Page Table (PROCESS STATE):");
+        System.out.println("    Virtual 0x00400000 → Physical Frame " + frameForA + 
+                          " (addr 0x" + Integer.toHexString(physicalMemory.getFrameAddress(frameForA)) + ")");
+        System.out.println("    Virtual 0x10000000 → Physical Frame " + dataFrameA +
+                          " (addr 0x" + Integer.toHexString(physicalMemory.getFrameAddress(dataFrameA)) + ")");
+        System.out.println();
+        System.out.println("  Process B's Page Table (PROCESS STATE):");
+        System.out.println("    Virtual 0x00400000 → Physical Frame " + frameForB +
+                          " (addr 0x" + Integer.toHexString(physicalMemory.getFrameAddress(frameForB)) + ")");
+        System.out.println("    Virtual 0x10000000 → Physical Frame " + dataFrameB +
+                          " (addr 0x" + Integer.toHexString(physicalMemory.getFrameAddress(dataFrameB)) + ")");
+        System.out.println();
+        
+        // Demonstrate address translation
+        System.out.println("Address Translation Demo:");
+        int virtualAddr = 0x00400000 + 100;  // Offset 100 into page
+        int physAddrA = ptA.translate(virtualAddr);
+        int physAddrB = ptB.translate(virtualAddr);
+        
+        System.out.println("  Same virtual address 0x" + Integer.toHexString(virtualAddr) + ":");
+        System.out.println("    Process A → Physical 0x" + Integer.toHexString(physAddrA));
+        System.out.println("    Process B → Physical 0x" + Integer.toHexString(physAddrB));
+        System.out.println("    (Different physical addresses = ISOLATION!)");
+        System.out.println();
+        
+        // Write different values to same virtual address in each process
+        System.out.println("Process Isolation Demo:");
+        physicalMemory.writePhysical(physAddrA, 42);   // Process A writes 42
+        physicalMemory.writePhysical(physAddrB, 99);   // Process B writes 99
+        
+        System.out.println("  Process A writes 42 to virtual 0x" + Integer.toHexString(virtualAddr));
+        System.out.println("  Process B writes 99 to virtual 0x" + Integer.toHexString(virtualAddr));
+        System.out.println();
+        System.out.println("  Reading back:");
+        System.out.println("    Process A reads: " + physicalMemory.readPhysical(physAddrA));
+        System.out.println("    Process B reads: " + physicalMemory.readPhysical(physAddrB));
+        System.out.println("    (Each process sees its own value - ISOLATION!)");
+        System.out.println();
+        
+        // Show page fault scenario
+        System.out.println("Page Fault Demo:");
+        int unmappedAddr = 0x20000000;  // Not mapped
+        int translation = ptA.translate(unmappedAddr);
+        System.out.println("  Accessing unmapped address 0x" + Integer.toHexString(unmappedAddr));
+        System.out.println("  Translation result: " + translation + " (=-1 means PAGE FAULT!)");
+        System.out.println("  Page faults in Process A: " + ptA.getPageFaults());
+        System.out.println();
+        
+        // Show physical memory status
+        System.out.println("Physical Memory Status (HARDWARE STATE):");
+        System.out.println("  Allocated Frames: " + physicalMemory.getAllocatedFrames());
+        System.out.println("  Free Frames: " + physicalMemory.getFreeFrames());
+        System.out.println();
+        
+        // Summary
+        System.out.println("SUMMARY:");
+        System.out.println("  ┌─────────────────────────────────────────────────────────┐");
+        System.out.println("  │  Physical Memory = HARDWARE (one instance, shared)      │");
+        System.out.println("  │  Page Table = PROCESS STATE (one per process)           │");
+        System.out.println("  │                                                         │");
+        System.out.println("  │  This gives each process the illusion of having         │");
+        System.out.println("  │  the entire address space to itself!                    │");
+        System.out.println("  └─────────────────────────────────────────────────────────┘");
         System.out.println();
     }
     

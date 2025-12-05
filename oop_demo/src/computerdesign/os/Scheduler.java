@@ -5,19 +5,91 @@ import java.util.*;
 /**
  * Scheduler - decides which process/thread runs next.
  * 
- * The scheduler is responsible for:
- * - Selecting the next process to run (scheduling algorithm)
- * - Performing context switches
- * - Ensuring fair CPU allocation
+ * ═══════════════════════════════════════════════════════════════════════════════
+ * THE SCHEDULING PROBLEM
+ * ═══════════════════════════════════════════════════════════════════════════════
  * 
- * Common scheduling algorithms:
- * - FCFS (First Come First Served): Simple, but poor response time
- * - Round Robin: Time slices, good for interactive systems
- * - Priority: Higher priority runs first
- * - Multilevel Queue: Different queues for different process types
- * - CFS (Completely Fair Scheduler): Linux's approach
+ * Modern systems run many processes, but CPUs have limited cores.
+ * The scheduler creates the ILLUSION of parallelism by rapidly switching
+ * between processes (time-sharing).
  * 
- * This implementation provides Round Robin and Priority scheduling.
+ *   Time →  |-------|-------|-------|-------|-------|-------|
+ *           |  P1   |  P2   |  P3   |  P1   |  P2   |  P3   |  ...
+ *           
+ *   Each process thinks it has the CPU to itself!
+ * 
+ * ═══════════════════════════════════════════════════════════════════════════════
+ * SCHEDULING GOALS (often conflicting!)
+ * ═══════════════════════════════════════════════════════════════════════════════
+ * 
+ * FAIRNESS:       Every process should get a fair share of CPU time
+ * THROUGHPUT:     Maximize jobs completed per unit time
+ * LATENCY:        Minimize time from request to response
+ * TURNAROUND:     Minimize time from submission to completion
+ * UTILIZATION:    Keep CPU busy (minimize idle time)
+ * 
+ * No single algorithm optimizes all goals - tradeoffs are inevitable!
+ * 
+ * ═══════════════════════════════════════════════════════════════════════════════
+ * COMMON SCHEDULING ALGORITHMS
+ * ═══════════════════════════════════════════════════════════════════════════════
+ * 
+ * FCFS (First Come First Served):
+ *   ┌───────────────────────────────────────────────────┐
+ *   │ P1 ████████████████████████ │ P2 ████ │ P3 ████  │
+ *   └───────────────────────────────────────────────────┘
+ *   + Simple, no starvation
+ *   - "Convoy effect": short jobs wait behind long ones
+ * 
+ * ROUND ROBIN (Time-Sliced):
+ *   ┌────────────────────────────────────────────────────────────┐
+ *   │ P1 ██ │ P2 ██ │ P3 ██ │ P1 ██ │ P2 ██ │ P3 ██ │ P1 ██ │...
+ *   └────────────────────────────────────────────────────────────┘
+ *   + Fair, good response time for interactive tasks
+ *   - Context switch overhead, poor for batch jobs
+ *   Time quantum tradeoff:
+ *     - Too short: excessive context switches
+ *     - Too long: poor response time
+ * 
+ * PRIORITY:
+ *   ┌───────────────────────────────────────────────────┐
+ *   │ High █████████ │ Med ████████████ │ Low ████████ │
+ *   └───────────────────────────────────────────────────┘
+ *   + Important tasks run first
+ *   - STARVATION: low priority may never run!
+ *   Solution: "Aging" - increase priority over time
+ * 
+ * MULTILEVEL FEEDBACK QUEUE (used by most real OSes):
+ *   - Multiple queues with different priorities
+ *   - Processes move between queues based on behavior
+ *   - Interactive → high priority, CPU-bound → low priority
+ * 
+ * ═══════════════════════════════════════════════════════════════════════════════
+ * CONTEXT SWITCHING
+ * ═══════════════════════════════════════════════════════════════════════════════
+ * 
+ * When switching from Process A to Process B:
+ * 
+ *   1. Save Process A's state:
+ *      - All registers (including PC, SP)
+ *      - CPU flags
+ *      - Memory management info (page table base)
+ *      
+ *   2. Load Process B's state:
+ *      - Restore all registers
+ *      - Restore page table
+ *      - Flush TLB (if needed)
+ *      
+ *   3. Resume execution at Process B's saved PC
+ * 
+ * Context switches are EXPENSIVE! (~1-10 microseconds)
+ * - Direct cost: saving/restoring state
+ * - Indirect cost: cache/TLB pollution
+ * 
+ * ═══════════════════════════════════════════════════════════════════════════════
+ * 
+ * @see Process - The entities being scheduled
+ * @see ProcessThread - For fine-grained scheduling within a process
  */
 public class Scheduler {
     

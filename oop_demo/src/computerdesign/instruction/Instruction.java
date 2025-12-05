@@ -3,16 +3,85 @@ package computerdesign.instruction;
 /**
  * Instruction - represents a single RISC-V instruction.
  * 
- * RISC-V has 6 instruction formats, all 32 bits:
- * - R-type: Register-register operations (add, sub, and, or, etc.)
- * - I-type: Immediate operations (addi, loads, jalr)
- * - S-type: Store operations
- * - B-type: Branch operations
- * - U-type: Upper immediate (lui, auipc)
- * - J-type: Jump (jal)
+ * ═══════════════════════════════════════════════════════════════════════════════
+ * FUNDAMENTAL INSIGHT: INSTRUCTIONS ARE JUST DATA!
+ * ═══════════════════════════════════════════════════════════════════════════════
  * 
- * Key insight: The instruction is just data (32 bits). It becomes meaningful
- * only when the control unit decodes it and the datapath executes it.
+ * An instruction is simply a 32-bit number stored in memory, just like any
+ * other data. It only becomes meaningful when:
+ *   1. The processor FETCHES it (reads from memory)
+ *   2. The control unit DECODES it (interprets the bits)
+ *   3. The datapath EXECUTES it (performs the operation)
+ * 
+ * This is the stored-program concept: code and data share the same memory!
+ * 
+ * ═══════════════════════════════════════════════════════════════════════════════
+ * RISC-V INSTRUCTION FORMATS (all 32 bits)
+ * ═══════════════════════════════════════════════════════════════════════════════
+ * 
+ * R-TYPE (Register-Register): add, sub, and, or, xor, sll, srl, sra, slt
+ * ┌─────────┬─────┬─────┬───────┬─────┬─────────┐
+ * │ funct7  │ rs2 │ rs1 │funct3 │ rd  │ opcode  │
+ * │ [31:25] │[24:20]│[19:15]│[14:12]│[11:7]│ [6:0] │
+ * │  7 bits │5 bits│5 bits│3 bits │5 bits│ 7 bits │
+ * └─────────┴─────┴─────┴───────┴─────┴─────────┘
+ * Example: add x1, x2, x3  →  rd=x1, rs1=x2, rs2=x3
+ * 
+ * I-TYPE (Immediate): addi, lw, jalr, lb, lh, lbu, lhu
+ * ┌─────────────────┬─────┬───────┬─────┬─────────┐
+ * │    imm[11:0]    │ rs1 │funct3 │ rd  │ opcode  │
+ * │     12 bits     │5 bits│3 bits │5 bits│ 7 bits │
+ * └─────────────────┴─────┴───────┴─────┴─────────┘
+ * Example: addi x1, x2, 5  →  rd=x1, rs1=x2, imm=5
+ * 
+ * S-TYPE (Store): sw, sb, sh
+ * ┌─────────┬─────┬─────┬───────┬─────────┬─────────┐
+ * │imm[11:5]│ rs2 │ rs1 │funct3 │imm[4:0] │ opcode  │
+ * │  7 bits │5 bits│5 bits│3 bits │ 5 bits  │ 7 bits │
+ * └─────────┴─────┴─────┴───────┴─────────┴─────────┘
+ * Note: Immediate is SPLIT to keep rs1, rs2, rd in same position as R-type!
+ * 
+ * B-TYPE (Branch): beq, bne, blt, bge, bltu, bgeu
+ * ┌────┬────────┬─────┬─────┬───────┬────────┬───┬─────────┐
+ * │[12]│[10:5]  │ rs2 │ rs1 │funct3 │ [4:1]  │[11]│ opcode  │
+ * │1 bit│ 6 bits │5 bits│5 bits│3 bits │ 4 bits │1 bit│ 7 bits │
+ * └────┴────────┴─────┴─────┴───────┴────────┴───┴─────────┘
+ * Note: Immediate bits are shuffled! This is for hardware efficiency.
+ *       Also, imm[0] is always 0 (instructions are 2-byte aligned).
+ * 
+ * U-TYPE (Upper Immediate): lui, auipc
+ * ┌───────────────────────────┬─────┬─────────┐
+ * │       imm[31:12]          │ rd  │ opcode  │
+ * │         20 bits           │5 bits│ 7 bits │
+ * └───────────────────────────┴─────┴─────────┘
+ * Example: lui x1, 0x12345  →  x1 = 0x12345000
+ * 
+ * J-TYPE (Jump): jal
+ * ┌────┬──────────┬───┬──────────┬─────┬─────────┐
+ * │[20]│ [10:1]   │[11]│ [19:12] │ rd  │ opcode  │
+ * │1 bit│ 10 bits │1 bit│ 8 bits │5 bits│ 7 bits │
+ * └────┴──────────┴───┴──────────┴─────┴─────────┘
+ * Note: Immediate bits are scrambled for hardware reasons (sign bit at [31]).
+ * 
+ * ═══════════════════════════════════════════════════════════════════════════════
+ * WHY THESE FORMATS?
+ * ═══════════════════════════════════════════════════════════════════════════════
+ * 
+ * RISC-V's format design has specific goals:
+ * 
+ *   1. REGULARITY: rs1, rs2, rd are always in the same bit positions
+ *      → Simpler decode hardware (can start reading registers immediately)
+ * 
+ *   2. SIGN BIT ALWAYS AT [31]: All immediates have sign bit at bit 31
+ *      → Sign extension can start immediately
+ * 
+ *   3. SIMPLE OPCODE SPACE: 7-bit opcode allows efficient encoding
+ *      → Fast instruction classification
+ * 
+ * ═══════════════════════════════════════════════════════════════════════════════
+ * 
+ * @see InstructionDecoder - Decodes raw instructions
+ * @see ControlUnit - Generates control signals based on instruction type
  */
 public class Instruction {
     

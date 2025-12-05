@@ -3,15 +3,69 @@ package computerdesign.alu;
 /**
  * ALU (Arithmetic Logic Unit) - the computational heart of the processor.
  * 
- * The ALU performs all arithmetic and logical operations:
- * - Arithmetic: ADD, SUB, MUL, DIV
- * - Logical: AND, OR, XOR, NOT
- * - Shifts: SLL, SRL, SRA
- * - Comparisons: SLT, SLTU
+ * ═══════════════════════════════════════════════════════════════════════════════
+ * WHAT THE ALU DOES
+ * ═══════════════════════════════════════════════════════════════════════════════
  * 
- * Key insight: The ALU is purely combinational logic - it has NO state.
- * Given inputs A, B, and operation, it immediately produces a result.
- * The result only becomes state when written to a register.
+ * The ALU performs ALL arithmetic and logical operations:
+ *   - Arithmetic: ADD, SUB, MUL, DIV
+ *   - Logical: AND, OR, XOR, NOT
+ *   - Shifts: SLL (left), SRL (logical right), SRA (arithmetic right)
+ *   - Comparisons: SLT (set less than), used for branches
+ * 
+ * ═══════════════════════════════════════════════════════════════════════════════
+ * CRITICAL INSIGHT: THE ALU HAS NO STATE!
+ * ═══════════════════════════════════════════════════════════════════════════════
+ * 
+ * The ALU is PURELY COMBINATIONAL LOGIC - just wires and gates.
+ * 
+ *        ┌───────────────────────────────────┐
+ *   A ───┤                                   │
+ *        │            ALU                    ├─── Result
+ *   B ───┤      (combinational)              │
+ *        │                                   ├─── Flags (zero, negative, etc.)
+ *   Op ──┤                                   │
+ *        └───────────────────────────────────┘
+ * 
+ * Given inputs A, B, and operation code, output appears (almost) instantly.
+ * There are no flip-flops, no clock, no memory inside the ALU.
+ * 
+ * The result only becomes STATE when it's written to a register at clock edge.
+ * 
+ * ═══════════════════════════════════════════════════════════════════════════════
+ * ALU IN THE DATAPATH
+ * ═══════════════════════════════════════════════════════════════════════════════
+ * 
+ *                    ┌─────────┐
+ *   rs1 value ──────►│         │
+ *                    │   ALU   ├────► To register file (rd)
+ *   rs2 OR imm ─────►│         │      or memory address
+ *                    └────┬────┘
+ *   ALU control ─────────►│
+ *   (from control unit)
+ * 
+ * The ALU is used for:
+ *   1. Arithmetic/logic instructions (ADD, SUB, AND, etc.) - obvious
+ *   2. Memory address calculation (base + offset for LW/SW)
+ *   3. Branch comparison (is rs1 < rs2?)
+ *   4. PC calculation (PC + offset for jumps)
+ * 
+ * ═══════════════════════════════════════════════════════════════════════════════
+ * FLAGS AND CONDITION CODES
+ * ═══════════════════════════════════════════════════════════════════════════════
+ * 
+ * The ALU produces FLAGS that indicate properties of the result:
+ * 
+ *   ZERO:     Result is 0 (used for BEQ: branch if equal)
+ *   NEGATIVE: Result is negative (MSB is 1)
+ *   OVERFLOW: Signed arithmetic overflow (result doesn't fit)
+ *   CARRY:    Unsigned overflow (for multi-word arithmetic)
+ * 
+ * Note: RISC-V doesn't use condition codes like x86. Instead, comparison
+ * instructions (SLT) write 1 or 0 to a register, and branches compare
+ * registers directly. This is simpler and avoids flag dependency issues.
+ * 
+ * ═══════════════════════════════════════════════════════════════════════════════
  */
 public class ALU {
     

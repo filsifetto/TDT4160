@@ -8,27 +8,86 @@ import computerdesign.memory.MainMemory;
 import computerdesign.memory.RegisterFile;
 
 /**
- * SingleCycleProcessor - executes one instruction per clock cycle.
+ * SingleCycleProcessor - executes one complete instruction per clock cycle.
  * 
- * This is the simplest processor design:
- * - Each instruction completes in exactly one cycle
- * - All datapath components are used once per instruction
- * - Clock period must be long enough for the slowest instruction
+ * ═══════════════════════════════════════════════════════════════════════════════
+ * THE SIMPLEST PROCESSOR DESIGN
+ * ═══════════════════════════════════════════════════════════════════════════════
  * 
- * Advantages:
- * - Simple to understand and implement
- * - CPI (Cycles Per Instruction) = 1
+ * In a single-cycle processor, each instruction completes in exactly ONE cycle.
+ * The entire datapath is used once per instruction, from fetch to writeback.
  * 
- * Disadvantages:
- * - Long clock period (limited by slowest instruction, typically LOAD)
- * - Poor hardware utilization (most components idle most of the time)
+ * ═══════════════════════════════════════════════════════════════════════════════
+ * SINGLE-CYCLE DATAPATH
+ * ═══════════════════════════════════════════════════════════════════════════════
  * 
- * The execution follows the classic 5-stage pattern in ONE cycle:
- * 1. Fetch: Read instruction from memory
- * 2. Decode: Determine what to do, read registers
- * 3. Execute: ALU operation
- * 4. Memory: Load/store if needed
- * 5. WriteBack: Write result to register
+ *                      ┌──────────────────────────────────────────────────────┐
+ *                      │                                                      │
+ *      ┌───┐   +4      │    ┌─────────┐                                      │
+ *   ┌──│PC │◄──────────┼────│   MUX   │◄─ branch/jump target                 │
+ *   │  └─┬─┘           │    └─────────┘                                      │
+ *   │    │             │         ▲                                           │
+ *   │    ▼             │         │                                           │
+ *   │ ┌──────┐         │    ┌────┴────┐                                      │
+ *   │ │Instr │         │    │ Branch  │                                      │
+ *   │ │Memory│         │    │  Logic  │                                      │
+ *   │ └──┬───┘         │    └────┬────┘                                      │
+ *   │    │             │         │                                           │
+ *   │    ▼             │         │                                           │
+ *   │ ┌──────┐    ┌────┴───┐ ┌───┴───┐  ┌────────┐   ┌────────┐             │
+ *   │ │Decode├───►│Register├►│  ALU  ├─►│  Data  ├──►│  MUX   ├────────────┐│
+ *   │ │      │    │  File  │ │       │  │ Memory │   │        │            ││
+ *   │ └──────┘    └────────┘ └───────┘  └────────┘   └────────┘            ││
+ *   │                  ▲                                  │                 ││
+ *   │                  │                                  │                 ││
+ *   │                  └──────────────────────────────────┼─────────────────┘│
+ *   │                         (write back to rd)          │                  │
+ *   └─────────────────────────────────────────────────────┘                  │
+ *                                                                            │
+ *   ════════════════════════════════════════════════════════════════════════│══
+ *   Everything above happens in ONE clock cycle!                             │
+ *   ════════════════════════════════════════════════════════════════════════│══
+ *                                                                            │
+ * ═══════════════════════════════════════════════════════════════════════════════
+ * TIMING ANALYSIS
+ * ═══════════════════════════════════════════════════════════════════════════════
+ * 
+ * Clock period must accommodate the SLOWEST instruction (critical path):
+ * 
+ *   LOAD instruction (lw) is typically the slowest:
+ *   
+ *   PC → Instr Memory → Register Read → ALU → Data Memory → Register Write
+ *   │         │              │           │          │              │
+ *   └─ 50ps ──┴── 200ps ─────┴── 30ps ───┴── 50ps ──┴── 200ps ─────┴── 30ps
+ *                                                                      │
+ *                                              Total: ~560ps ◄─────────┘
+ * 
+ *   But an ADD instruction only needs:
+ *   PC → Instr Memory → Register Read → ALU → Register Write = ~360ps
+ *   
+ *   The ADD must WAIT for the full 560ps cycle anyway! Wasted time.
+ * 
+ * ═══════════════════════════════════════════════════════════════════════════════
+ * ADVANTAGES AND DISADVANTAGES
+ * ═══════════════════════════════════════════════════════════════════════════════
+ * 
+ * ADVANTAGES:
+ *   ✓ Simple to understand and design
+ *   ✓ CPI (Cycles Per Instruction) = exactly 1
+ *   ✓ No hazards (each instruction completes before next starts)
+ *   ✓ Easy to verify correctness
+ * 
+ * DISADVANTAGES:
+ *   ✗ Long clock period (slowest instruction determines cycle time)
+ *   ✗ Poor hardware utilization (ALU idle during memory access, etc.)
+ *   ✗ Not practical for modern high-performance systems
+ * 
+ * This design is GREAT for learning, but real processors use pipelining!
+ * 
+ * ═══════════════════════════════════════════════════════════════════════════════
+ * 
+ * @see MultiCycleProcessor - Better utilization, variable CPI
+ * @see PipelineProcessor - Overlapped execution, high throughput
  */
 public class SingleCycleProcessor implements Processor {
     

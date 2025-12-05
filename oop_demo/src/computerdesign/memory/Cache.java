@@ -3,17 +3,87 @@ package computerdesign.memory;
 /**
  * Cache - fast memory between processor and main memory.
  * 
- * Key concepts from Patterson & Hennessy:
- * - Temporal locality: Recently accessed data likely to be accessed again
- * - Spatial locality: Data near recently accessed data likely to be accessed
+ * ═══════════════════════════════════════════════════════════════════════════════
+ * WHY CACHES EXIST
+ * ═══════════════════════════════════════════════════════════════════════════════
  * 
- * Cache organization:
- * - Block/Line: Unit of data transfer (typically 32-64 bytes)
- * - Set: Group of blocks where a memory address can be placed
- * - Way: Number of blocks per set (associativity)
+ * The CPU is MUCH faster than main memory:
+ *   - CPU can execute ~4 instructions per nanosecond
+ *   - Main memory takes ~100 ns to respond
+ *   - Without cache, CPU would wait ~400 cycles for every memory access!
  * 
- * This implementation is a direct-mapped cache (1-way set associative).
- * Each memory address maps to exactly one cache location.
+ * Caches bridge this gap by keeping frequently-used data close to the CPU.
+ * 
+ * ═══════════════════════════════════════════════════════════════════════════════
+ * LOCALITY PRINCIPLES (Why Caches Work)
+ * ═══════════════════════════════════════════════════════════════════════════════
+ * 
+ * TEMPORAL LOCALITY: "If you used it recently, you'll probably use it again"
+ *   - Loop counters, local variables
+ *   - Function return addresses
+ *   - Hot code paths
+ * 
+ * SPATIAL LOCALITY: "If you used address X, you'll probably use X+1, X+2..."
+ *   - Array traversal
+ *   - Sequential instruction fetch
+ *   - Struct/object field access
+ * 
+ * ═══════════════════════════════════════════════════════════════════════════════
+ * CACHE ORGANIZATION
+ * ═══════════════════════════════════════════════════════════════════════════════
+ * 
+ * ADDRESS DECOMPOSITION (for cache lookup):
+ * 
+ *   ┌───────────────────────────────────────────────────────────────┐
+ *   │           ADDRESS (e.g., 32 bits)                             │
+ *   ├─────────────────┬─────────────────┬──────────────────────────┤
+ *   │      TAG        │     INDEX       │        OFFSET            │
+ *   │   (remaining)   │  (set select)   │    (byte in block)       │
+ *   └─────────────────┴─────────────────┴──────────────────────────┘
+ *           │                 │                    │
+ *           │                 │                    └─► Select byte within block
+ *           │                 └─► Select which set/line to check
+ *           └─► Compare with stored tag to verify match
+ * 
+ * CACHE TYPES:
+ * 
+ *   Direct-Mapped (1-way): Each address maps to exactly one cache line
+ *   ┌─────┐  Address X can only go here
+ *   │     │←─────────────────────────────────
+ *   ├─────┤
+ *   │     │
+ *   ├─────┤
+ *   │     │
+ *   └─────┘
+ *   Simple, fast, but many conflicts
+ * 
+ *   N-Way Set Associative: Address can go in any of N lines in a set
+ *   ┌─────┬─────┬─────┬─────┐  Address X can go in any of these 4
+ *   │     │     │     │     │←─────────────────────────────────────
+ *   └─────┴─────┴─────┴─────┘
+ *   More flexible, fewer conflicts, but slower lookup
+ * 
+ *   Fully Associative: Address can go anywhere (like a hash table)
+ *   Most flexible, fewest conflicts, but expensive to search
+ * 
+ * ═══════════════════════════════════════════════════════════════════════════════
+ * WRITE POLICIES
+ * ═══════════════════════════════════════════════════════════════════════════════
+ * 
+ * WRITE-THROUGH: Write to both cache AND memory immediately
+ *   + Memory always up-to-date, simple
+ *   - Slow (every write goes to memory)
+ * 
+ * WRITE-BACK: Write only to cache, mark as "dirty", write to memory later
+ *   + Fast writes (memory only updated on eviction)
+ *   - Complex, memory can be stale
+ *   
+ * This implementation uses WRITE-BACK with WRITE-ALLOCATE (fetch block on miss).
+ * 
+ * ═══════════════════════════════════════════════════════════════════════════════
+ * 
+ * @see MemoryUnit - Interface this implements
+ * @see MainMemory - The next level in the hierarchy
  */
 public class Cache implements MemoryUnit {
     

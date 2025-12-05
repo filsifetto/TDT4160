@@ -6,17 +6,89 @@ import computerdesign.instruction.Instruction;
 /**
  * ControlUnit - the brain that orchestrates processor operations.
  * 
- * The control unit decodes instructions and generates control signals
- * that tell other components what to do:
- * - Which registers to read/write
- * - What ALU operation to perform
- * - Whether to access memory
- * - How to update the PC
+ * ═══════════════════════════════════════════════════════════════════════════════
+ * WHAT THE CONTROL UNIT DOES
+ * ═══════════════════════════════════════════════════════════════════════════════
  * 
- * Key insight: The control unit is also combinational logic - given an
- * instruction, it immediately produces the correct control signals.
- * Different processor designs (single-cycle, multi-cycle, pipelined)
- * use the same control logic but apply it differently over time.
+ * The control unit decodes instructions and generates CONTROL SIGNALS that
+ * tell the datapath components what to do. It's the "conductor" of the
+ * processor orchestra!
+ * 
+ * For example, for the instruction "add x1, x2, x3":
+ *   - regWrite = true (we're writing to x1)
+ *   - aluOp = ADD (we want the ALU to add)
+ *   - aluSrcB = false (second operand comes from register, not immediate)
+ *   - memRead = false (no memory access)
+ *   - memWrite = false (no memory access)
+ * 
+ * ═══════════════════════════════════════════════════════════════════════════════
+ * CONTROL SIGNALS IN THE DATAPATH
+ * ═══════════════════════════════════════════════════════════════════════════════
+ * 
+ *                              Control Unit
+ *                                   │
+ *              ┌────────────────────┼────────────────────┐
+ *              │                    │                    │
+ *              ▼                    ▼                    ▼
+ *   ┌──────────────────┐  ┌─────────────────┐  ┌─────────────────┐
+ *   │   Register File  │  │      ALU        │  │  Data Memory    │
+ *   │   ┌──────────┐   │  │  ┌──────────┐   │  │  ┌──────────┐   │
+ *   │   │ regWrite ├───┼──│  │  aluOp   ├───┼──│  │ memRead  ├───│
+ *   │   └──────────┘   │  │  └──────────┘   │  │  │ memWrite │   │
+ *   └──────────────────┘  │  ┌──────────┐   │  │  └──────────┘   │
+ *                         │  │ aluSrcB  ├───┼──│                 │
+ *                         │  └──────────┘   │  └─────────────────┘
+ *                         └─────────────────┘
+ *                                   
+ *                    ┌──────────────┴──────────────┐
+ *                    │        Multiplexers         │
+ *                    │  (memToReg, branch, etc.)   │
+ *                    └─────────────────────────────┘
+ * 
+ * ═══════════════════════════════════════════════════════════════════════════════
+ * CONTROL SIGNAL MEANINGS
+ * ═══════════════════════════════════════════════════════════════════════════════
+ * 
+ * REGISTER CONTROL:
+ *   regWrite:  Write result to destination register (rd)?
+ * 
+ * ALU CONTROL:
+ *   aluOp:     What operation should the ALU perform?
+ *   aluSrcB:   Where does ALU's second input come from?
+ *              false = register (rs2), true = immediate
+ * 
+ * MEMORY CONTROL:
+ *   memRead:   Read data from memory? (for loads)
+ *   memWrite:  Write data to memory? (for stores)
+ *   memToReg:  What goes to the register file?
+ *              false = ALU result, true = memory data
+ * 
+ * PC CONTROL:
+ *   branch:    Is this a conditional branch?
+ *   jump:      Is this an unconditional jump?
+ *   link:      Should we save PC+4 in rd? (for JAL/JALR)
+ * 
+ * ═══════════════════════════════════════════════════════════════════════════════
+ * COMBINATIONAL VS SEQUENTIAL CONTROL
+ * ═══════════════════════════════════════════════════════════════════════════════
+ * 
+ * SINGLE-CYCLE: Control is purely combinational
+ *   - Decode instruction → produce all signals immediately
+ *   - All signals active for the entire cycle
+ * 
+ * MULTI-CYCLE: Control is sequential (FSM)
+ *   - Different signals active in different cycles
+ *   - State machine determines which signals when
+ *   
+ * PIPELINED: Control signals travel with the instruction
+ *   - Decode once, carry signals through pipeline registers
+ *   - Each stage uses appropriate signals
+ * 
+ * ═══════════════════════════════════════════════════════════════════════════════
+ * 
+ * @see Instruction - The input to the control unit
+ * @see ALU - Uses aluOp to determine operation
+ * @see Processor - Uses control signals to orchestrate execution
  */
 public class ControlUnit {
     
