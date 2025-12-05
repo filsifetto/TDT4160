@@ -4,6 +4,11 @@
 *.exe
 *.out
 
+# Java build output
+out/
+target/
+build/
+
 # Executables (without extension)
 overflow_c
 overflow_rust

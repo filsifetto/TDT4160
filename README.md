@@ -15,6 +15,7 @@ This project contains various hands-on demonstrations covering:
 ```
 ├── benchmark_demo/      # Performance benchmarks
 ├── memory_demo/         # Memory and page size demonstrations
+├── oop_demo/            # OOP model of computer architecture (Java)
 ├── overflow_demo/       # Integer overflow across languages
 └── thread_demo/         # Thread creation and limits
 ```
@@ -56,6 +57,16 @@ Demonstrates thread creation and system limits using POSIX threads (C) and Pytho
 ### Benchmark Demo (`benchmark_demo/`)
 
 Various performance benchmarks including cache performance testing and parallelism benchmarks.
+
+### OOP Demo (`oop_demo/`)
+
+A Java project that models computer architecture using Object-Oriented Programming:
+- **Processors**: Single-cycle, multi-cycle, and pipelined implementations
+- **Memory hierarchy**: Registers, cache, main memory
+- **Instructions**: RISC-V instruction encoding and decoding
+- **OS concepts**: Processes, threads, and scheduling
+
+See `oop_demo/README.md` for detailed documentation.
 
 ## Learning Goals
 
