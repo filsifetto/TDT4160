@@ -7,6 +7,7 @@ import computerdesign.os.ProcessThread;
 import computerdesign.os.Scheduler;
 import computerdesign.processor.*;
 import computerdesign.theory.*;
+import computerdesign.vm.*;
 
 /**
  * Main - Comprehensive demonstration of Computer Design concepts.
@@ -38,6 +39,7 @@ public class Main {
         }
         
         // Run all demonstrations
+        demonstrateAbstractionLevels();  // NEW: Show the complete hierarchy
         demonstratePerformance();
         demonstrateNumberSystems();
         demonstrateDigitalLogic();
@@ -49,11 +51,14 @@ public class Main {
         demonstrateProcessors();
         demonstrateExceptions();
         demonstrateVirtualMemory();
+        demonstrateVirtualMachines();     // NEW: Virtual machines & hypervisor
         demonstrateParallelComputing();
         demonstrateProcessAndThreads();
         
         System.out.println("\n✓ All demonstrations complete!");
         System.out.println("\nTip: Run with argument to see specific topic:");
+        System.out.println("  java computerdesign.Main abstraction");
+        System.out.println("  java computerdesign.Main vm");
         System.out.println("  java computerdesign.Main performance");
         System.out.println("  java computerdesign.Main numbers");
         System.out.println("  java computerdesign.Main logic");
@@ -62,6 +67,8 @@ public class Main {
     
     private static void runSpecificDemo(String topic) {
         switch (topic.toLowerCase()) {
+            case "abstraction": demonstrateAbstractionLevels(); break;
+            case "vm": demonstrateVirtualMachines(); break;
             case "performance": demonstratePerformance(); break;
             case "numbers": demonstrateNumberSystems(); break;
             case "logic": demonstrateDigitalLogic(); break;
@@ -77,9 +84,9 @@ public class Main {
             case "threads": demonstrateProcessAndThreads(); break;
             default:
                 System.out.println("Unknown topic: " + topic);
-                System.out.println("Available: performance, numbers, logic, memory, tlb, alu,");
-                System.out.println("           instructions, calling, processors, exceptions,");
-                System.out.println("           virtual, parallel, threads");
+                System.out.println("Available: abstraction, vm, performance, numbers, logic,");
+                System.out.println("           memory, tlb, alu, instructions, calling,");
+                System.out.println("           processors, exceptions, virtual, parallel, threads");
         }
     }
     
@@ -601,6 +608,140 @@ public class Main {
             }
         }
         System.out.println("  Context switches in 200 cycles: " + contextSwitches);
+        System.out.println();
+    }
+    
+    // ════════════════════════════════════════════════════════════════════════════
+    // ABSTRACTION LEVELS
+    // ════════════════════════════════════════════════════════════════════════════
+    
+    /**
+     * Demonstrate the complete computer abstraction hierarchy.
+     * From analog electronics to applications.
+     */
+    private static void demonstrateAbstractionLevels() {
+        System.out.println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+        System.out.println("  COMPUTER ABSTRACTION LEVELS");
+        System.out.println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+        System.out.println();
+        
+        System.out.println("THE SEVEN LEVELS OF ABSTRACTION:");
+        System.out.println();
+        
+        for (AbstractionLevels.Level level : AbstractionLevels.Level.values()) {
+            String marker = (level == AbstractionLevels.Level.VIRTUAL_MACHINE) ? " ★" : "";
+            System.out.printf("  Level %d: %s%s\n", level.level, level.name, marker);
+            System.out.printf("           %s\n", level.description);
+        }
+        
+        System.out.println();
+        System.out.println("KEY INSIGHT: Each level hides complexity from the level above!");
+        System.out.println("  • Applications don't know about cache misses");
+        System.out.println("  • OS doesn't know about pipeline stalls");
+        System.out.println("  • ISA doesn't know about transistor sizes");
+        System.out.println();
+        
+        System.out.println(AbstractionLevels.demonstratePerspectives());
+        System.out.println(AbstractionLevels.demonstrateInterfaces());
+    }
+    
+    // ════════════════════════════════════════════════════════════════════════════
+    // VIRTUAL MACHINES
+    // ════════════════════════════════════════════════════════════════════════════
+    
+    /**
+     * Demonstrate virtual machine concepts and hypervisor operation.
+     */
+    private static void demonstrateVirtualMachines() {
+        System.out.println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+        System.out.println("  VIRTUAL MACHINES AND HYPERVISOR");
+        System.out.println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+        System.out.println();
+        
+        System.out.println(Hypervisor.demonstrateVirtualization());
+        
+        // Create a hypervisor
+        System.out.println("LIVE DEMONSTRATION:\n");
+        Hypervisor hypervisor = new Hypervisor("TDT4160-VMM", 
+                                                Hypervisor.Type.TYPE_1_BARE_METAL, 
+                                                1024 * 1024);  // 1 MB
+        
+        System.out.println("Created Hypervisor:");
+        System.out.println("  Name: " + hypervisor.getName());
+        System.out.println("  Type: " + hypervisor.getType().name);
+        System.out.println("  Physical Memory: " + hypervisor.getTotalMemory() / 1024 + " KB");
+        System.out.println();
+        
+        // Create virtual machines
+        VirtualMachine vm1 = hypervisor.createVM("Ubuntu-VM", 256 * 1024);    // 256 KB
+        VirtualMachine vm2 = hypervisor.createVM("Windows-VM", 256 * 1024);   // 256 KB
+        VirtualMachine vm3 = hypervisor.createVM("FreeBSD-VM", 128 * 1024);   // 128 KB
+        
+        System.out.println("Created Virtual Machines:");
+        System.out.println("  " + vm1);
+        System.out.println("  " + vm2);
+        System.out.println("  " + vm3);
+        System.out.println();
+        
+        System.out.println("Memory Allocation:");
+        System.out.printf("  Allocated: %d KB / %d KB (%.1f%%)\n",
+            hypervisor.getAllocatedMemory() / 1024,
+            hypervisor.getTotalMemory() / 1024,
+            hypervisor.getAllocatedMemory() * 100.0 / hypervisor.getTotalMemory());
+        System.out.printf("  Free: %d KB\n", hypervisor.getFreeMemory() / 1024);
+        System.out.println();
+        
+        // Load a simple program into VM1 (address must be within VM's memory)
+        int[] simpleProgram = {
+            // addi x10, x0, 5    (a0 = 5)
+            0x00500513,
+            // addi x11, x0, 7    (a1 = 7)
+            0x00700593,
+            // add  x12, x10, x11 (a2 = a0 + a1 = 12)
+            0x00B50633,
+            // ecall              (hypercall - exit)
+            0x00000073
+        };
+        vm1.loadProgram(simpleProgram, 0x1000);  // Load at 4KB offset
+        
+        System.out.println("Loaded program into " + vm1.getName() + ":");
+        System.out.println("  addi a0, zero, 5   # a0 = 5");
+        System.out.println("  addi a1, zero, 7   # a1 = 7");
+        System.out.println("  add  a2, a0, a1    # a2 = a0 + a1 = 12");
+        System.out.println("  ecall              # Exit via hypercall");
+        System.out.println();
+        
+        // Start and run VMs
+        hypervisor.startVM(vm1.getVmId());
+        hypervisor.startVM(vm2.getVmId());
+        hypervisor.startVM(vm3.getVmId());
+        
+        System.out.println("Running VMs with time-slicing...");
+        hypervisor.setTimeQuantum(100);
+        hypervisor.run(500);
+        
+        System.out.println();
+        System.out.println("VM1 Execution Result:");
+        VirtualMachine.VirtualCPU vcpu = vm1.getVCPU();
+        System.out.println("  a0 (x10) = " + vcpu.getRegister(10));
+        System.out.println("  a1 (x11) = " + vcpu.getRegister(11));
+        System.out.println("  a2 (x12) = " + vcpu.getRegister(12) + " (5 + 7 = 12 ✓)");
+        System.out.println();
+        
+        // Show hypervisor stats
+        System.out.println(hypervisor.getStats());
+        System.out.println();
+        
+        // Show how VM sees vs reality
+        System.out.println("ISOLATION IN ACTION:");
+        System.out.println("┌──────────────────────────────────────────────────────────────┐");
+        System.out.println("│  VM's Perspective         │  Reality                         │");
+        System.out.println("├──────────────────────────────────────────────────────────────┤");
+        System.out.println("│  \"I have my own CPU\"     │  Sharing with other VMs          │");
+        System.out.println("│  \"256 KB RAM is mine\"    │  It's actually host memory       │");
+        System.out.println("│  \"Running in ring 0\"     │  Actually in VMX non-root mode   │");
+        System.out.println("│  \"Direct hardware access\"│  Emulated by hypervisor          │");
+        System.out.println("└──────────────────────────────────────────────────────────────┘");
         System.out.println();
     }
 }
